@@ -37,27 +37,45 @@ fn main() {
         0x11, 0x22, 0x33, 0x44,
     ];
 
-    let mut memory = GuestMemory::new(0x500000, 4);
+    let mut memory = GuestMemory::new(0x500000, 8);
 
-    load_segment(&mut memory, &file, 4, 0x500000, 4).unwrap();
+    load_segment(
+        &mut memory,
+        &file,
+        4, // File offset
+        0x500000, // Virtual address
+        4, // p_filesz
+        8, // p_memsz
+    ).unwrap();
 
     println!("{:02X?}", memory.bytes);
 }
-
 fn load_segment(
     memory: &mut GuestMemory,
     file: &[u8],
     file_offset: usize,
     virtual_address: u64,
-    segment_file_size: usize,
-) -> Option<()> {
-    for i in 0..segment_file_size {
-        let file_index = file_offset.checked_add(i)?;
-        let byte = *file.get(file_index)?;
-
-        let address = virtual_address.checked_add(i as u64)?;
-        memory.write_byte(address, byte)?;
+    file_size: usize,
+    memory_size: usize,
+) -> Result<(), &'static str> {
+    if memory_size < file_size {
+        return Err("Memory size is smaller than file size");
     }
 
-    Some(())
+    for i in 0..file_size {
+        let file_index = file_offset
+            .checked_add(i)
+            .ok_or("File offset overflow")?;
+        let byte = *file
+            .get(file_index)
+            .ok_or("File offset is out of bounds")?;
+        let address = virtual_address
+            .checked_add(u64::try_from(i).map_err(|_| "Offset too large")?)
+            .ok_or("Virtual address overflow")?;
+        memory
+            .write_byte(address, byte)
+            .ok_or("Guest memory address is invalid")?;
+    }
+
+    Ok(())
 }
