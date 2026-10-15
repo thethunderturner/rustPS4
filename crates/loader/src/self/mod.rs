@@ -10,3 +10,10 @@ pub struct SelfHeader {
     unknown2: [u8; 2],
     padding2: [u8; 4],
 }
+
+pub struct SelfSegment {
+    pub flags: u64,
+    pub file_offset: u64,
+    pub file_size: u64,
+    pub memory_size: u64,
+}
