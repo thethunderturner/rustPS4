@@ -28,20 +28,36 @@ impl GuestMemory {
 
         Some(())
     }
+
 }
 
 fn main() {
-    let mut memory = GuestMemory::new(0x400000, 4);
-    println!("{:#?}", memory);
+    let file = [
+        0xAA, 0xBB, 0xCC, 0xDD,
+        0x11, 0x22, 0x33, 0x44,
+    ];
 
-    memory.write_byte(0x400000, 0xAA).unwrap();
-    memory.write_byte(0x400001, 0xBB).unwrap();
-    memory.write_byte(0x400002, 0xCC).unwrap();
-    memory.write_byte(0x400003, 0xFF).unwrap();
-    memory.write_byte(0x400004, 0xDD).unwrap();
+    let mut memory = GuestMemory::new(0x500000, 4);
 
-    println!("{:02X}", memory.read_byte(0x400000).unwrap());
-    println!("{:02X}", memory.read_byte(0x400001).unwrap());
-    println!("{:02X}", memory.read_byte(0x400002).unwrap());
-    println!("{:02X}", memory.read_byte(0x400003).unwrap());
+    load_segment(&mut memory, &file, 4, 0x500000, 4).unwrap();
+
+    println!("{:02X?}", memory.bytes);
+}
+
+fn load_segment(
+    memory: &mut GuestMemory,
+    file: &[u8],
+    file_offset: usize,
+    virtual_address: u64,
+    segment_file_size: usize,
+) -> Option<()> {
+    for i in 0..segment_file_size {
+        let file_index = file_offset.checked_add(i)?;
+        let byte = *file.get(file_index)?;
+
+        let address = virtual_address.checked_add(i as u64)?;
+        memory.write_byte(address, byte)?;
+    }
+
+    Some(())
 }
