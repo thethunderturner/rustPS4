@@ -1,26 +1,42 @@
-use std::fs::File;
-use std::io;
-use std::io::Read;
+struct GuestMemory {
+    base: u64,
+    bytes: Vec<u8>,
+}
 
-fn main() -> io::Result<()> {
-    let mut f = File::open("/run/media/mateo/ExtremeMainPart/Games/Emulation/dumped_games/ps4/Hidden/CUSA12606/eboot.bin")?;
-    let mut buffer = [0; 8];
-
-    // read up to 8 bytes
-    f.read_exact(&mut buffer)?;
-    for byte in buffer {
-        print!("{byte:02X} ");
+impl GuestMemory {
+    fn new(base: u64, size: usize) -> Self {
+        Self {
+            base,
+            bytes: vec![0; size],
+        }
     }
-    println!();
 
-    let magic = u32::from_le_bytes([
-        buffer[0],
-        buffer[1],
-        buffer[2],
-        buffer[3],
-    ]);
+    fn read_byte(&self, address: u64) -> Option<u8> {
+        let offset = address.checked_sub(self.base)?;
+        let index = usize::try_from(offset).ok()?;
 
-    println!("Magic: {magic:#010X}");
+        self.bytes.get(index).copied()
+    }
 
-    Ok(())
+    fn write_byte(&mut self, address: u64, value: u8) -> Option<()> {
+        let offset = address.checked_sub(self.base)?;
+        let index = usize::try_from(offset).ok()?;
+
+        let byte = self.bytes.get_mut(index)?;
+        *byte = value;
+
+        Some(())
+    }
+}
+
+fn main() {
+    let mut memory = GuestMemory::new(0x400000, 4);
+
+    memory.write_byte(0x400000, 0xAA).unwrap();
+    memory.write_byte(0x400001, 0xBB).unwrap();
+    memory.write_byte(0x400002, 0xCC).unwrap();
+
+    println!("{:02X}", memory.read_byte(0x400000).unwrap());
+    println!("{:02X}", memory.read_byte(0x400001).unwrap());
+    println!("{:02X}", memory.read_byte(0x400002).unwrap());
 }
