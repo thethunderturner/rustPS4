@@ -1,3 +1,7 @@
+use std::fs::File;
+use std::io;
+use std::io::Read;
+
 #[derive(Debug)]
 struct GuestMemory {
     base: u64,
@@ -31,24 +35,17 @@ impl GuestMemory {
 
 }
 
-fn main() {
-    let file = [
-        0xAA, 0xBB, 0xCC, 0xDD,
-        0x11, 0x22, 0x33, 0x44,
-    ];
+fn main() -> io::Result<()> {
+    let mut f = File::open("/run/media/mateo/ExtremeMainPart/Games/Emulation/dumped_games/ps4/Hidden/CUSA12606/eboot.bin")?;
+    let mut buffer = [0; 4];
+    f.read(&mut buffer)?;
 
-    let mut memory = GuestMemory::new(0x500000, 8);
+    // SELF header magic
+    if buffer == [0x4F, 0x15, 0x3D, 0x1D] {
+        println!("Found SELF header");
+    }
 
-    load_segment(
-        &mut memory,
-        &file,
-        4, // File offset
-        0x500000, // Virtual address
-        4, // p_filesz
-        8, // p_memsz
-    ).unwrap();
-
-    println!("{:02X?}", memory.bytes);
+    Ok(())
 }
 fn load_segment(
     memory: &mut GuestMemory,
