@@ -27,6 +27,32 @@ pub struct SelfSegment {
     pub memory_size: u64,
 }
 
+impl SelfSegment {
+    pub fn read(reader: &mut impl Read) -> io::Result<Self> {
+        Ok(Self {
+            flags: read_u64(reader)?,
+            file_offset: read_u64(reader)?,
+            file_size: read_u64(reader)?,
+            memory_size: read_u64(reader)?,
+        })
+    }
+}
+
+impl SelfSegment {
+    pub fn segment_id(&self) -> u64 { self.flags >> 20 }
+    pub fn is_ordered(&self) -> bool {
+        self.flags & 0x1 != 0
+    }
+    pub fn is_encrypted(&self) -> bool { self.flags & 0x2 != 0 }
+    pub fn is_signed(&self) -> bool {
+        self.flags & 0x4 != 0
+    }
+    pub fn is_compressed(&self) -> bool {
+        self.flags & 0x8 != 0
+    }
+    pub fn is_blocked(&self) -> bool { self.flags & 0x800 != 0 }
+}
+
 impl SelfHeader {
     pub fn read(reader: &mut impl Read) -> io::Result<Self> {
         let magic = read_bytes::<4>(reader)?;
@@ -72,6 +98,11 @@ fn read_u32(reader: &mut impl Read) -> io::Result<u32> {
     let bytes = read_bytes::<4>(reader)?;
     Ok(u32::from_le_bytes(bytes))
 }
+fn read_u64(reader: &mut impl Read) -> io::Result<u64> {
+    let bytes = read_bytes::<8>(reader)?;
+    Ok(u64::from_le_bytes(bytes))
+}
+
 
 fn read_bytes<const N: usize>(
     reader: &mut impl Read,

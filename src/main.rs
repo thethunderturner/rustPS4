@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::Read;
-use loader::self_format::header::SelfHeader;
+use loader::self_format::header::{SelfHeader, SelfSegment};
 
 #[derive(Debug)]
 struct GuestMemory {
@@ -42,6 +42,11 @@ fn main() -> io::Result<()> {
     // SELF header magic
     let header = SelfHeader::read(&mut f)?;
     println!("Header: {:#?}", header);
+
+    for i in 0..header.segment_count {
+        let segment = SelfSegment::read(&mut f)?;
+        println!("Segment {i}: {segment:#?}");
+    }
 
     Ok(())
 }
