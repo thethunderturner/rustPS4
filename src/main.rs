@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
+use loader::elf::enums::p_type::PType;
 use loader::elf::header::ElfHeader;
 use loader::elf::program_header::ElfProgramHeader;
 use loader::self_format::header::{SelfHeader, SelfSegment};
@@ -74,7 +75,10 @@ fn main() -> io::Result<()> {
 
             for i in 0..elf.e_phnum {
                 let ph = ElfProgramHeader::read(&mut f)?;
-                println!("Program header {i}: {ph:#?}");
+
+                if matches!(PType::from_raw(&ph.p_type), PType::PtLoad) {
+                    println!("Found PT_LOAD segment {i}");
+                }
             }
         }
 
