@@ -54,32 +54,20 @@ fn main() -> io::Result<()> {
             println!("Detected PS4 SELF");
 
             let header = SelfHeader::read(&mut f)?;
-            println!("Header: {header:#?}");
+            let mut segments: Vec<SelfSegment> = Vec::new();
+            let mut headers: Vec<ElfProgramHeader> = Vec::new();
 
-            for i in 0..header.segment_count {
-                let segment = SelfSegment::read(&mut f)?;
-                println!("Segment {i}: {segment:#?}");
+            for _i in 0..header.segment_count {
+                segments.push(SelfSegment::read(&mut f)?);
             }
 
-            println!("Current offset: {:#X}", f.stream_position()?);
-            let elf_base = f.stream_position()?; // Expected 0x160
             let elf = ElfHeader::read(&mut f)?;
-
-            let phoff = elf_base.checked_add(elf.e_phoff)
-                .ok_or_else(|| io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Program header offset overflow",
-                ))?;
-
-            f.seek(SeekFrom::Start(phoff))?;
-
-            for i in 0..elf.e_phnum {
-                let ph = ElfProgramHeader::read(&mut f)?;
-
-                if matches!(PType::from_raw(&ph.p_type), PType::PtLoad) {
-                    println!("Found PT_LOAD segment {i}");
-                }
+            for _i in 0..elf.e_phnum {
+                headers.push(ElfProgramHeader::read(&mut f)?);
             }
+
+            println!("{:#?}", segments);
+            println!("{:#?}", headers);
         }
 
         [0x7F, 0x45, 0x4C, 0x46] => {
