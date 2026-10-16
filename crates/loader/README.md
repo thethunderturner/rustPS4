@@ -1,4 +1,8 @@
-Important: https://www.psdevwiki.com/ps4/SELF_-_SPRX 
+Important Documentation:
+- https://www.psdevwiki.com/ps4/SELF_-_SPRX
+- https://gabi.xinuos.com/elf/01-intro.html
+
+### Memory Segment
 - p_filesz - Size in bytes of the segment in the file image
 - p_memsz	- Size in bytes of the segment in memory. So the total amount of memory a segment needs.
 
