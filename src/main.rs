@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io;
 use std::io::Read;
+use loader::self_format::header::SelfHeader;
 
 #[derive(Debug)]
 struct GuestMemory {
@@ -37,15 +38,10 @@ impl GuestMemory {
 
 fn main() -> io::Result<()> {
     let mut f = File::open("/run/media/mateo/ExtremeMainPart/Games/Emulation/dumped_games/ps4/Hidden/CUSA12606/eboot.bin")?;
-    let mut buffer = [0; 4];
-    f.read(&mut buffer)?;
-
-
 
     // SELF header magic
-    if buffer == [0x4F, 0x15, 0x3D, 0x1D] {
-        println!("Found SELF header");
-    }
+    let header = SelfHeader::read(&mut f)?;
+    println!("Header: {:#?}", header);
 
     Ok(())
 }
