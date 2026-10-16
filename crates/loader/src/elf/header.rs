@@ -3,7 +3,7 @@ use std::io::{self, Read};
 use crate::helpers::{read_bytes, read_u16, read_u32, read_u64};
 
 #[derive(Debug)]
-pub struct Elf {
+pub struct ElfHeader {
     pub magic: [u8; 4],
     pub class: u8,
     pub data: u8,
@@ -26,7 +26,7 @@ pub struct Elf {
     pub e_shstrndx: u16,
 }
 
-impl Elf {
+impl ElfHeader {
     pub fn read(reader: &mut impl Read) -> io::Result<Self> {
         let magic = read_bytes::<4>(reader)?;
 

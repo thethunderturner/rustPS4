@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
-use loader::elf::header::Elf;
+use loader::elf::header::ElfHeader;
+use loader::elf::program_header::ElfProgramHeader;
 use loader::self_format::header::{SelfHeader, SelfSegment};
 
 #[derive(Debug)]
@@ -60,9 +61,21 @@ fn main() -> io::Result<()> {
             }
 
             println!("Current offset: {:#X}", f.stream_position()?);
-            let elf = Elf::read(&mut f)?;
+            let elf_base = f.stream_position()?; // Expected 0x160
+            let elf = ElfHeader::read(&mut f)?;
 
-            println!("{elf:#?}");
+            let phoff = elf_base.checked_add(elf.e_phoff)
+                .ok_or_else(|| io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Program header offset overflow",
+                ))?;
+
+            f.seek(SeekFrom::Start(phoff))?;
+
+            for i in 0..elf.e_phnum {
+                let ph = ElfProgramHeader::read(&mut f)?;
+                println!("Program header {i}: {ph:#?}");
+            }
         }
 
         [0x7F, 0x45, 0x4C, 0x46] => {
