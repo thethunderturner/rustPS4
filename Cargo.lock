@@ -33,3 +33,12 @@ version = "0.1.0"
 [[package]]
 name = "rustPS4"
 version = "0.1.0"
+dependencies = [
+ "core",
+ "gpu",
+ "input",
+ "kernel",
+ "libraries",
+ "loader",
+ "memory",
+]

@@ -40,6 +40,8 @@ fn main() -> io::Result<()> {
     let mut buffer = [0; 4];
     f.read(&mut buffer)?;
 
+
+
     // SELF header magic
     if buffer == [0x4F, 0x15, 0x3D, 0x1D] {
         println!("Found SELF header");

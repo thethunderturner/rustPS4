@@ -11,3 +11,10 @@ members = [
 ]
 
 [dependencies]
+ps4_core = { package = "core", path = "crates/core" }
+gpu = { path = "crates/gpu" }
+input = { path = "crates/input" }
+kernel = { path = "crates/kernel" }
+libraries = { path = "crates/libraries" }
+loader = { path = "crates/loader" }
+memory = { path = "crates/memory" }
