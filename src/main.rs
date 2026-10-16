@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io;
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
+use loader::elf::header::Elf;
 use loader::self_format::header::{SelfHeader, SelfSegment};
 
 #[derive(Debug)]
@@ -39,13 +40,41 @@ impl GuestMemory {
 fn main() -> io::Result<()> {
     let mut f = File::open("/run/media/mateo/ExtremeMainPart/Games/Emulation/dumped_games/ps4/Hidden/CUSA12606/eboot.bin")?;
 
-    // SELF header magic
-    let header = SelfHeader::read(&mut f)?;
-    println!("Header: {:#?}", header);
+    // Identify the file format
+    let mut magic = [0u8; 4];
+    f.read_exact(&mut magic)?;
 
-    for i in 0..header.segment_count {
-        let segment = SelfSegment::read(&mut f)?;
-        println!("Segment {i}: {segment:#?}");
+    // Return to the beginning of the file.
+    f.seek(SeekFrom::Start(0))?;
+
+    match magic {
+        [0x4F, 0x15, 0x3D, 0x1D] => {
+            println!("Detected PS4 SELF");
+
+            let header = SelfHeader::read(&mut f)?;
+            println!("Header: {header:#?}");
+
+            for i in 0..header.segment_count {
+                let segment = SelfSegment::read(&mut f)?;
+                println!("Segment {i}: {segment:#?}");
+            }
+
+            println!("Current offset: {:#X}", f.stream_position()?);
+            let elf = Elf::read(&mut f)?;
+
+            println!("{elf:#?}");
+        }
+
+        [0x7F, 0x45, 0x4C, 0x46] => {
+            println!("Detected ELF");
+        }
+
+        _ => {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Unknown executable format",
+            ));
+        }
     }
 
     Ok(())

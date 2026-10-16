@@ -1,4 +1,5 @@
 use std::io::{self, Read};
+use crate::helpers::{read_bytes, read_u16, read_u32, read_u64};
 
 #[derive(Debug)]
 pub struct SelfHeader {
@@ -19,51 +20,9 @@ pub struct SelfHeader {
     pub reserved3: u32,
 }
 
-#[derive(Debug)]
-pub struct SelfSegment {
-    pub flags: u64,
-    pub file_offset: u64,
-    pub file_size: u64,
-    pub memory_size: u64,
-}
-
-impl SelfSegment {
-    pub fn read(reader: &mut impl Read) -> io::Result<Self> {
-        Ok(Self {
-            flags: read_u64(reader)?,
-            file_offset: read_u64(reader)?,
-            file_size: read_u64(reader)?,
-            memory_size: read_u64(reader)?,
-        })
-    }
-}
-
-impl SelfSegment {
-    pub fn segment_id(&self) -> u64 { self.flags >> 20 }
-    pub fn is_ordered(&self) -> bool {
-        self.flags & 0x1 != 0
-    }
-    pub fn is_encrypted(&self) -> bool { self.flags & 0x2 != 0 }
-    pub fn is_signed(&self) -> bool {
-        self.flags & 0x4 != 0
-    }
-    pub fn is_compressed(&self) -> bool {
-        self.flags & 0x8 != 0
-    }
-    pub fn is_blocked(&self) -> bool { self.flags & 0x800 != 0 }
-}
-
 impl SelfHeader {
     pub fn read(reader: &mut impl Read) -> io::Result<Self> {
         let magic = read_bytes::<4>(reader)?;
-
-        if magic != [0x4F, 0x15, 0x3D, 0x1D] {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Invalid SELF magic",
-            ));
-        }
-
         let version = read_bytes::<1>(reader)?[0];
         let mode = read_bytes::<1>(reader)?[0];
         let endian = read_bytes::<1>(reader)?[0];
@@ -89,25 +48,33 @@ impl SelfHeader {
     }
 }
 
-fn read_u16(reader: &mut impl Read) -> io::Result<u16> {
-    let bytes = read_bytes::<2>(reader)?;
-    Ok(u16::from_le_bytes(bytes))
+#[derive(Debug)]
+pub struct SelfSegment {
+    pub flags: u64,
+    pub file_offset: u64,
+    pub file_size: u64,
+    pub memory_size: u64,
 }
 
-fn read_u32(reader: &mut impl Read) -> io::Result<u32> {
-    let bytes = read_bytes::<4>(reader)?;
-    Ok(u32::from_le_bytes(bytes))
-}
-fn read_u64(reader: &mut impl Read) -> io::Result<u64> {
-    let bytes = read_bytes::<8>(reader)?;
-    Ok(u64::from_le_bytes(bytes))
-}
-
-
-fn read_bytes<const N: usize>(
-    reader: &mut impl Read,
-) -> io::Result<[u8; N]> {
-    let mut buffer = [0u8; N];
-    reader.read_exact(&mut buffer)?;
-    Ok(buffer)
+impl SelfSegment {
+    pub fn read(reader: &mut impl Read) -> io::Result<Self> {
+        Ok(Self {
+            flags: read_u64(reader)?,
+            file_offset: read_u64(reader)?,
+            file_size: read_u64(reader)?,
+            memory_size: read_u64(reader)?,
+        })
+    }
+    pub fn segment_id(&self) -> u64 { self.flags >> 20 }
+    pub fn is_ordered(&self) -> bool {
+        self.flags & 0x1 != 0
+    }
+    pub fn is_encrypted(&self) -> bool { self.flags & 0x2 != 0 }
+    pub fn is_signed(&self) -> bool {
+        self.flags & 0x4 != 0
+    }
+    pub fn is_compressed(&self) -> bool {
+        self.flags & 0x8 != 0
+    }
+    pub fn is_blocked(&self) -> bool { self.flags & 0x800 != 0 }
 }
