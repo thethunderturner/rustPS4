@@ -6,6 +6,7 @@ use memory::address_space::AddressSpace;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
+use memory::permissions::Permissions;
 
 fn main() -> io::Result<()> {
     let mut f = File::open(
@@ -60,7 +61,19 @@ fn main() -> io::Result<()> {
             for _i in 0..elf.e_phnum {
                 headers.push(ElfProgramHeader::read(&mut f)?);
             }
-            println!("{:#?}", headers);
+            // println!("{:#?}", headers);
+
+            let code = Permissions::new(5);
+
+            assert!(code.can_read());
+            assert!(!code.can_write());
+            assert!(code.can_execute());
+
+            let data = Permissions::new(6);
+
+            assert!(data.can_read());
+            assert!(data.can_write());
+            assert!(!data.can_execute());
         }
 
         _ => {
