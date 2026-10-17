@@ -41,4 +41,26 @@ impl AddressSpace {
 
         Ok(())
     }
+
+    // Given an address, search through the regions in virtual memory and return the byte that matches the address
+    pub fn read_byte(&self, address: u64) -> Option<u8> {
+        for region in &self.regions {
+            if let Some(byte) = region.read_byte(address) {
+                return Some(byte);
+            }
+        }
+
+        None
+    }
+
+    // Given an address and a byte, it searches through the regions in virtual memory and writes the byte to the address
+    pub fn write_byte(&mut self, address: u64, value: u8) -> Option<()> {
+        for region in &mut self.regions {
+            if region.write_byte(address, value).is_some() {
+                return Some(());
+            }
+        }
+
+        None
+    }
 }

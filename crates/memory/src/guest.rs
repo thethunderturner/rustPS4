@@ -13,14 +13,14 @@ impl GuestMemory {
         }
     }
 
-    fn read_byte(&self, address: u64) -> Option<u8> {
+    pub fn read_byte(&self, address: u64) -> Option<u8> {
         let offset = address.checked_sub(self.base)?;
         let index = usize::try_from(offset).ok()?;
 
         self.bytes.get(index).copied()
     }
 
-    fn write_byte(&mut self, address: u64, value: u8) -> Option<()> {
+    pub fn write_byte(&mut self, address: u64, value: u8) -> Option<()> {
         let offset = address.checked_sub(self.base)?;
         let index = usize::try_from(offset).ok()?;
 
