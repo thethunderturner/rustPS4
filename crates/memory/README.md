@@ -37,3 +37,24 @@ For segment 2, the loader reads that the segment starts at `0x4` and ends at `0x
 When loading a segment into memory, each byte's destination address is calculated using its offset relative to the beginning of that segment, not the beginning of the file.\
 For example: The byte at file offset `0x4` is the first byte of Segment 2, so its relative offset within Segment 2 is 0. Therefore, it is placed at Segment 2's starting virtual address, 0x500000.
 The next byte has a relative offset of 1, so it goes to `0x500001`, and so on.
+
+## Guest Memory
+A continuous region of the PS4's virtual memory. When we load the ELF, the `PT_LOAD` headers tell us where to place executable data in guest virtual memory. Example:
+```
+ElfProgramHeader {
+    p_type: 1,
+    p_flags: 5,
+    p_offset: 16384,
+    p_vaddr: 0,
+    p_paddr: 0,
+    p_filesz: 55652344,
+    p_memsz: 55652344,
+    p_align: 16384,
+},
+```
+Using a load bias X, the virtual address of the segment starts at `X + p_vaddr`, and has size `p_memsz`. Note, that we allocate from `X + p_vaddr` to `X + p_vaddr + p_filesz`, and additionally from `X + p_vaddr + p_filesz + 1` to `X + p_vaddr + p_memsz` with 0s.\
+As specified by `p_flags`, each region in the guest memory has certain permissions, ie Read, Write, Execute.
+
+## Address Space
+An address space is the collection of virtual memory addresses available to a program.\
+For this emulator, we'll represent it as a collection of mapped memory regions.

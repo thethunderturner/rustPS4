@@ -1,11 +1,12 @@
 #[derive(Debug)]
 pub struct GuestMemory {
-    base: u64,
-    bytes: Vec<u8>,
+    pub base: u64,
+    pub bytes: Vec<u8>,
 }
 
 impl GuestMemory {
-    fn new(base: u64, size: usize) -> Self {
+    // This represents guest memory from X to Y (exclusive)
+    pub fn new(base: u64, size: usize) -> Self {
         Self {
             base,
             bytes: vec![0; size],
@@ -28,7 +29,6 @@ impl GuestMemory {
 
         Some(())
     }
-
 }
 
 pub fn overlaps(
