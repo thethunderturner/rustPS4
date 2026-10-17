@@ -15,7 +15,7 @@ enum EIdent {
     NonStopKernel,
     AROS,
     FenixOS,
-    CloudABI
+    CloudABI,
 }
 
 impl EIdent {

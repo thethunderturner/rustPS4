@@ -31,12 +31,7 @@ impl GuestMemory {
     }
 }
 
-pub fn overlaps(
-    a_start: u64,
-    a_size: u64,
-    b_start: u64,
-    b_size: u64,
-) -> Option<bool> {
+pub fn overlaps(a_start: u64, a_size: u64, b_start: u64, b_size: u64) -> Option<bool> {
     let a_end = a_start.checked_add(a_size)?;
     let b_end = b_start.checked_add(b_size)?;
 
@@ -60,12 +55,8 @@ pub fn load_segment(
     }
 
     for i in 0..file_size {
-        let file_index = file_offset
-            .checked_add(i)
-            .ok_or("File offset overflow")?;
-        let byte = *file
-            .get(file_index)
-            .ok_or("File offset is out of bounds")?;
+        let file_index = file_offset.checked_add(i).ok_or("File offset overflow")?;
+        let byte = *file.get(file_index).ok_or("File offset is out of bounds")?;
         let address = virtual_address
             .checked_add(u64::try_from(i).map_err(|_| "Offset too large")?)
             .ok_or("Virtual address overflow")?;

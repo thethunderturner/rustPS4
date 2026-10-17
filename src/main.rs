@@ -1,14 +1,16 @@
-use std::fs::File;
-use std::io;
-use std::io::{Read, Seek, SeekFrom};
 use loader::elf::enums::p_type::PType;
 use loader::elf::header::ElfHeader;
 use loader::elf::program_header::ElfProgramHeader;
 use loader::self_format::header::{SelfHeader, SelfSegment};
 use memory::address_space::AddressSpace;
+use std::fs::File;
+use std::io;
+use std::io::{Read, Seek, SeekFrom};
 
 fn main() -> io::Result<()> {
-    let mut f = File::open("/run/media/mateo/ExtremeMainPart/Games/Emulation/dumped_games/ps4/Hidden/CUSA12606/eboot.bin")?;
+    let mut f = File::open(
+        "/run/media/mateo/ExtremeMainPart/Games/Emulation/dumped_games/ps4/Hidden/CUSA12606/eboot.bin",
+    )?;
 
     // Identify the file format
     let mut magic = [0u8; 4];

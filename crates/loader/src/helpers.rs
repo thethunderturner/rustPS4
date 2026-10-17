@@ -1,9 +1,7 @@
 use std::io;
 use std::io::Read;
 
-pub fn read_bytes<const N: usize>(
-    reader: &mut impl Read,
-) -> io::Result<[u8; N]> {
+pub fn read_bytes<const N: usize>(reader: &mut impl Read) -> io::Result<[u8; N]> {
     let mut buffer = [0u8; N];
     reader.read_exact(&mut buffer)?;
     Ok(buffer)

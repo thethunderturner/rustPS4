@@ -10,7 +10,7 @@ pub enum EType {
     SceDynamic,
     Hios,
     Loproc,
-    Hiproc
+    Hiproc,
 }
 
 impl EType {

@@ -1,5 +1,5 @@
-use std::io::{self, Read};
 use crate::helpers::{read_bytes, read_u16, read_u32, read_u64};
+use std::io::{self, Read};
 
 #[derive(Debug)]
 pub struct SelfHeader {
@@ -65,16 +65,22 @@ impl SelfSegment {
             memory_size: read_u64(reader)?,
         })
     }
-    pub fn segment_id(&self) -> u64 { self.flags >> 20 }
+    pub fn segment_id(&self) -> u64 {
+        self.flags >> 20
+    }
     pub fn is_ordered(&self) -> bool {
         self.flags & 0x1 != 0
     }
-    pub fn is_encrypted(&self) -> bool { self.flags & 0x2 != 0 }
+    pub fn is_encrypted(&self) -> bool {
+        self.flags & 0x2 != 0
+    }
     pub fn is_signed(&self) -> bool {
         self.flags & 0x4 != 0
     }
     pub fn is_compressed(&self) -> bool {
         self.flags & 0x8 != 0
     }
-    pub fn is_blocked(&self) -> bool { self.flags & 0x800 != 0 }
+    pub fn is_blocked(&self) -> bool {
+        self.flags & 0x800 != 0
+    }
 }
