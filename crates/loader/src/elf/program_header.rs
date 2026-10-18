@@ -1,6 +1,6 @@
-use std::io::{self, Read};
 use crate::elf::enums::p_type::PType;
 use crate::helpers::{read_u32, read_u64};
+use std::io::{self, Read};
 
 #[derive(Debug)]
 pub struct ElfProgramHeader {
