@@ -136,3 +136,48 @@ pub fn segment_file_offset(
 
     Ok(segment.file_offset)
 }
+
+// finds where the requested ELF data is physically stored
+pub fn elf_range_file_offset(
+    index: usize,
+    headers: &[ElfProgramHeader],
+    self_segments: Option<&[SelfSegment]>,
+) -> io::Result<u64> {
+    let invalid = || io::Error::new(io::ErrorKind::InvalidData, "Invalid ELF segment range");
+    let ph = headers.get(index).ok_or_else(invalid)?;
+    ph.p_offset.checked_add(ph.p_filesz).ok_or_else(invalid)?;
+    let Some(segments) = self_segments else {
+        return Ok(ph.p_offset);
+    };
+
+    if segments
+        .iter()
+        .any(|s| s.is_blocked() && s.id() == index as u64)
+    {
+        return segment_file_offset(index, ph, Some(segments));
+    }
+
+    for (container_index, container) in headers.iter().enumerate() {
+        let Some(relative) = ph.p_offset.checked_sub(container.p_offset) else {
+            continue;
+        };
+        if relative > container.p_filesz || ph.p_filesz > container.p_filesz - relative {
+            continue;
+        }
+        if !segments
+            .iter()
+            .any(|s| s.is_blocked() && s.id() == container_index as u64)
+        {
+            continue;
+        }
+        let base = segment_file_offset(container_index, container, Some(segments))?;
+        let offset = base.checked_add(relative).ok_or_else(invalid)?;
+        offset.checked_add(ph.p_filesz).ok_or_else(invalid)?;
+        return Ok(offset);
+    }
+
+    Err(io::Error::new(
+        io::ErrorKind::InvalidData,
+        "No SELF segment contains the requested ELF range",
+    ))
+}

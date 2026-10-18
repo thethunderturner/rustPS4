@@ -41,6 +41,12 @@ For `PT_LOAD` segments, we use:
 
 We make the distinction between `p_filesz` and `p_memsz` because the latter is the total amount of memory needed. `p_memsz - p_filesz =` additional amount of memory needed, filled with 0s. We do this because programs often need space for variables that initially contain zero but don't need those zero bytes stored explicitly in the executable.
 
+### PT_LOAD
+Tells the loader which bytes to map into guest memory
+
+### PT_DYNAMIC
+Identifies a table containing information needed for dynamic linking, such as dependencies, symbol tables, and relocation information.
+
 ### Loading Process
 1. Detect whether the file is ELF or SELF.
 2. Parse the ELF header and program headers.

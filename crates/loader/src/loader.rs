@@ -1,3 +1,4 @@
+use crate::elf::dynamic::{DynamicEntry, read_dynamic};
 use crate::elf::enums::p_type::PType;
 use crate::elf::header::ElfHeader;
 use crate::elf::program_header::ElfProgramHeader;
@@ -6,7 +7,9 @@ use crate::self_format::header::SelfHeader;
 use memory::address_space::AddressSpace;
 use memory::permissions::Permissions;
 
-use crate::self_format::segment::{SelfSegment, copy_segment, segment_file_offset};
+use crate::self_format::segment::{
+    SelfSegment, copy_segment, elf_range_file_offset, segment_file_offset,
+};
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
@@ -14,6 +17,7 @@ use std::io::{Read, Seek, SeekFrom};
 pub struct LoadedExecutable {
     pub memory: AddressSpace,
     pub entry_point: u64,
+    pub dynamic_entries: Vec<DynamicEntry>,
 }
 
 pub const BUFFER_SIZE: usize = 64 * 1024;
@@ -124,6 +128,31 @@ fn load_elf(mut file: File, self_segments: Option<&[SelfSegment]>) -> io::Result
         );
     }
 
+    let mut dynamic_entries = Vec::new();
+
+    // Locate and parse the ELF dynamic table.
+    for (index, ph) in headers.iter().enumerate() {
+        if ph.p_type != PType::PtDynamic {
+            continue;
+        }
+
+        println!("PT_DYNAMIC (PHDR {index}):");
+        println!("File offset:    {:#X}", ph.p_offset);
+        println!("Virtual addr:   {:#X}", ph.p_vaddr);
+        println!("File size:      {:#X}", ph.p_filesz);
+        println!("Memory size:    {:#X}", ph.p_memsz);
+        println!("Alignment:      {:#X}", ph.p_align);
+
+        let file_offset = elf_range_file_offset(index, &headers, self_segments)?;
+        println!("PT_DYNAMIC actual file offset: {file_offset:#X}");
+        file.seek(SeekFrom::Start(file_offset))?;
+        let entries = read_dynamic(&mut file, ph.p_filesz)?;
+        for entry in &entries {
+            println!("tag={:#X}, value={:#X}", entry.tag, entry.value);
+        }
+        dynamic_entries.extend(entries);
+    }
+
     let entry_point = LOAD_BIAS
         .checked_add(elf.e_entry)
         .ok_or_else(|| io::Error::other("Entry point overflow"))?;
@@ -137,5 +166,6 @@ fn load_elf(mut file: File, self_segments: Option<&[SelfSegment]>) -> io::Result
     Ok(LoadedExecutable {
         memory: space,
         entry_point,
+        dynamic_entries,
     })
 }
