@@ -104,16 +104,14 @@ impl AddressSpace {
             if !region.contains(address) {
                 continue;
             }
-            
-            let offset = address
-                .checked_sub(region.base)
-                .ok_or("Invalid address")?;
-            let start = usize::try_from(offset)
-                .map_err(|_| "Offset too large")?;
+
+            let offset = address.checked_sub(region.base).ok_or("Invalid address")?;
+            let start = usize::try_from(offset).map_err(|_| "Offset too large")?;
             let end = start
                 .checked_add(data.len())
                 .ok_or("Memory range overflow")?;
-            let destination = region.bytes
+            let destination = region
+                .bytes
                 .get_mut(start..end)
                 .ok_or("Data exceeds mapped region")?;
 

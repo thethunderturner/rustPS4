@@ -57,29 +57,3 @@ pub fn overlaps(a_start: u64, a_size: u64, b_start: u64, b_size: u64) -> Option<
 
     Some(a_start < b_end && b_start < a_end)
 }
-
-pub fn load_segment(
-    memory: &mut GuestMemory,
-    file: &[u8],
-    file_offset: usize,
-    virtual_address: u64,
-    file_size: usize,
-    memory_size: usize,
-) -> Result<(), &'static str> {
-    if memory_size < file_size {
-        return Err("Memory size is smaller than file size");
-    }
-
-    for i in 0..file_size {
-        let file_index = file_offset.checked_add(i).ok_or("File offset overflow")?;
-        let byte = *file.get(file_index).ok_or("File offset is out of bounds")?;
-        let address = virtual_address
-            .checked_add(u64::try_from(i).map_err(|_| "Offset too large")?)
-            .ok_or("Virtual address overflow")?;
-        memory
-            .write_byte(address, byte)
-            .ok_or("Guest memory address is invalid")?;
-    }
-
-    Ok(())
-}
