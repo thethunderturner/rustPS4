@@ -94,9 +94,7 @@ fn load_elf(mut f: File) -> io::Result<()> {
                 "ELF segment file size exceeds memory size",
             ));
         }
-
-        f.seek(SeekFrom::Start(ph.p_offset))?;
-
+        
         const BUFFER_SIZE: usize = 64 * 1024; // Buffer size of 64KiB (for now at leaast)
 
         let mut buffer = [0u8; BUFFER_SIZE];
@@ -130,5 +128,12 @@ fn load_elf(mut f: File) -> io::Result<()> {
         );
     }
 
+    let entry_address = load_bias
+        .checked_add(elf.e_entry)
+        .ok_or_else(|| io::Error::other("Entry point overflow"))?;
+    println!(
+        "Entry point byte: {:#X}",
+        space.read_byte(entry_address).map_err(io::Error::other)?
+    );
     Ok(())
 }
