@@ -87,9 +87,46 @@ fn load_elf(mut f: File) -> io::Result<()> {
             .map(addr, size, perms)
             .map_err(|message| io::Error::new(io::ErrorKind::InvalidData, message))?;
 
+        f.seek(SeekFrom::Start(ph.p_offset))?;
+        if ph.p_filesz > ph.p_memsz {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "ELF segment file size exceeds memory size",
+            ));
+        }
+
+        f.seek(SeekFrom::Start(ph.p_offset))?;
+
+        const BUFFER_SIZE: usize = 64 * 1024; // Buffer size of 64KiB (for now at leaast)
+
+        let mut buffer = [0u8; BUFFER_SIZE];
+        let mut remaining = ph.p_filesz;
+        let mut guest_address = addr;
+
+        while remaining > 0 {
+            let bytes_to_read = remaining.min(BUFFER_SIZE as u64);
+            let bytes_to_read = usize::try_from(bytes_to_read)
+                .map_err(|_| io::Error::other("Read size too large"))?;
+
+            f.read_exact(&mut buffer[..bytes_to_read])?;
+
+            space
+                .load_bytes(guest_address, &buffer[..bytes_to_read])
+                .map_err(io::Error::other)?;
+
+            // Advance the guest address
+            guest_address = guest_address
+                .checked_add(bytes_to_read as u64)
+                .ok_or_else(|| io::Error::other("Guest address overflow"))?;
+
+            // Reduce the number of remaining bytes
+            remaining -= bytes_to_read as u64;
+        }
+
         println!(
-            "Mapped PT_LOAD: base={addr:#X}, size={size:#X}, flags={:#X}",
-            ph.p_flags
+            "Loaded PT_LOAD: base={addr:#X}, file_size={:#X}, memory_size={:#X}",
+            ph.p_filesz,
+            ph.p_memsz,
         );
     }
 

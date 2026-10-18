@@ -96,10 +96,30 @@ impl AddressSpace {
     }
 
     pub fn load_bytes(&mut self, address: u64, data: &[u8]) -> Result<(), &'static str> {
-        for (index, byte) in data.iter().enumerate() {
-            let index = u64::try_from(index).map_err(|_| "Index too large")?;
-            let next_address = address.checked_add(index).ok_or("Address overflow")?;
-            self.load_byte(next_address, *byte)?;
+        if data.is_empty() {
+            return Ok(());
+        }
+
+        for region in &mut self.regions {
+            if !region.contains(address) {
+                continue;
+            }
+            
+            let offset = address
+                .checked_sub(region.base)
+                .ok_or("Invalid address")?;
+            let start = usize::try_from(offset)
+                .map_err(|_| "Offset too large")?;
+            let end = start
+                .checked_add(data.len())
+                .ok_or("Memory range overflow")?;
+            let destination = region.bytes
+                .get_mut(start..end)
+                .ok_or("Data exceeds mapped region")?;
+
+            destination.copy_from_slice(data);
+
+            return Ok(());
         }
 
         Ok(())
