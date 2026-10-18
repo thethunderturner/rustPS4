@@ -1,10 +1,10 @@
 use std::io::{self, Read};
-
+use crate::elf::enums::p_type::PType;
 use crate::helpers::{read_u32, read_u64};
 
 #[derive(Debug)]
 pub struct ElfProgramHeader {
-    pub p_type: u32,
+    pub p_type: PType,
     pub p_flags: u32,
     pub p_offset: u64,
     pub p_vaddr: u64,
@@ -17,7 +17,7 @@ pub struct ElfProgramHeader {
 impl ElfProgramHeader {
     pub fn read(reader: &mut impl Read) -> io::Result<Self> {
         Ok(Self {
-            p_type: read_u32(reader)?,
+            p_type: PType::from_raw(&read_u32(reader)?),
             p_flags: read_u32(reader)?,
             p_offset: read_u64(reader)?,
             p_vaddr: read_u64(reader)?,

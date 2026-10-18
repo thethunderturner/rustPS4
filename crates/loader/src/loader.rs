@@ -2,7 +2,9 @@
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
-
+use memory::address_space::AddressSpace;
+use memory::permissions::Permissions;
+use crate::elf::enums::p_type::PType;
 use crate::elf::header::ElfHeader;
 use crate::elf::program_header::ElfProgramHeader;
 use crate::self_format::header::{SelfHeader, SelfSegment};
@@ -70,10 +72,37 @@ fn load_elf(mut f: File) -> io::Result<()> {
         headers.push(ElfProgramHeader::read(&mut f)?);
     }
 
-    println!("ELF program headers: {}", headers.len());
+    let load_bias: u64 = 0x100000000;
+    let mut space = AddressSpace::new();
 
     for ph in &headers {
-        println!("{ph:#?}");
+        if ph.p_type != PType::PtLoad {
+            continue;
+        }
+        let addr = load_bias
+            .checked_add(ph.p_vaddr)
+            .ok_or_else(|| io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Guest address overflow",
+            ))?;
+
+        let size = usize::try_from(ph.p_memsz)
+            .map_err(|_| io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Segment size too large",
+            ))?;
+        let perms = Permissions::new(ph.p_flags);
+        space.map(addr, size, perms)
+            .map_err(|message| io::Error::new(
+                io::ErrorKind::InvalidData,
+                message,
+            ))?;
+
+        println!(
+            "Mapped PT_LOAD: base={addr:#X}, size={size:#X}, flags={:#X}",
+            ph.p_flags
+        );
+
     }
 
     Ok(())
