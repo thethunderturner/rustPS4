@@ -76,6 +76,14 @@ fn load_elf(mut f: File) -> io::Result<()> {
         if ph.p_type != PType::PtLoad {
             continue;
         }
+
+        if ph.p_filesz > ph.p_memsz {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "ELF segment file size exceeds memory size",
+            ));
+        }
+
         let addr = load_bias
             .checked_add(ph.p_vaddr)
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Guest address overflow"))?;
@@ -88,13 +96,7 @@ fn load_elf(mut f: File) -> io::Result<()> {
             .map_err(|message| io::Error::new(io::ErrorKind::InvalidData, message))?;
 
         f.seek(SeekFrom::Start(ph.p_offset))?;
-        if ph.p_filesz > ph.p_memsz {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "ELF segment file size exceeds memory size",
-            ));
-        }
-        
+
         const BUFFER_SIZE: usize = 64 * 1024; // Buffer size of 64KiB (for now at leaast)
 
         let mut buffer = [0u8; BUFFER_SIZE];
