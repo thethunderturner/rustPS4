@@ -13,7 +13,12 @@ impl AddressSpace {
         }
     }
 
-    pub fn map(&mut self, base: u64, size: usize, permissions: Permissions,) -> Result<(), &'static str> {
+    pub fn map(
+        &mut self,
+        base: u64,
+        size: usize,
+        permissions: Permissions,
+    ) -> Result<(), &'static str> {
         // Reject regions size 0
         if size == 0 {
             return Err("Region size cannot be 0");

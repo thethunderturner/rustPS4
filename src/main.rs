@@ -2,16 +2,12 @@ use loader::elf::enums::p_type::PType;
 use loader::elf::header::ElfHeader;
 use loader::elf::program_header::ElfProgramHeader;
 use loader::self_format::header::{SelfHeader, SelfSegment};
-use memory::address_space::AddressSpace;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
-use memory::permissions::Permissions;
 
 fn main() -> io::Result<()> {
-    let mut f = File::open(
-        "/run/media/mateo/SEAGATE4TB/ps4/Games/CUSA02368/eboot.bin",
-    )?;
+    let mut f = File::open("/run/media/mateo/SEAGATE4TB/ps4/Games/CUSA02368/eboot.bin")?;
 
     // Identify the file format
     let mut magic = [0u8; 4];
@@ -49,18 +45,6 @@ fn main() -> io::Result<()> {
                 headers.push(ElfProgramHeader::read(&mut f)?);
             }
             // println!("{:#?}", headers);
-
-            let mut space = AddressSpace::new();
-
-            space.map(0x1000, 0x1000, Permissions::new(5)).unwrap();
-            space.map(0x5000, 0x1000, Permissions::new(6)).unwrap();
-
-            assert!(space.write_byte(0x1100, 0xAB).is_err());
-            assert_eq!(space.read_byte(0x1100), Some(0));
-            assert_eq!(space.write_byte(0x5100, 0xCD), Ok(()));
-            assert_eq!(space.read_byte(0x5100), Some(0xCD));
-            assert_eq!(space.write_byte(0x9000, 0xAB), Err("Address is not mapped"));
-            println!("{space:?}");
         }
 
         _ => {
