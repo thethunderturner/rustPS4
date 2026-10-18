@@ -8,7 +8,12 @@ use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
 
-pub fn load(mut f: File) -> io::Result<()> {
+pub struct LoadedExecutable {
+    pub memory: AddressSpace,
+    pub entry_point: u64,
+}
+
+pub fn load(mut f: File) -> io::Result<LoadedExecutable> {
     // Identify the file format.
     let mut magic = [0u8; 4];
     f.read_exact(&mut magic)?;
@@ -19,36 +24,31 @@ pub fn load(mut f: File) -> io::Result<()> {
     match magic {
         [0x4F, 0x15, 0x3D, 0x1D] => {
             println!("Detected PS4 SELF");
-            load_self(f)?
+            load_self(f)
         }
         [0x7F, 0x45, 0x4C, 0x46] => {
             println!("Detected ELF");
-            load_elf(f)?
+            load_elf(f)
         }
-        _ => {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Unknown executable format",
-            ));
-        }
+        _ => Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Unknown executable format",
+        )),
     }
-
-    Ok(())
 }
 
-fn load_self(mut f: File) -> io::Result<()> {
+fn load_self(mut f: File) -> io::Result<LoadedExecutable> {
     let header = SelfHeader::read(&mut f)?;
     let mut segments: Vec<SelfSegment> = Vec::new();
 
     for _ in 0..header.segment_count {
         segments.push(SelfSegment::read(&mut f)?);
     }
-    load_elf(f)?;
 
-    Ok(())
+    Ok(load_elf(f)?)
 }
 
-fn load_elf(mut f: File) -> io::Result<()> {
+fn load_elf(mut f: File) -> io::Result<LoadedExecutable> {
     // Save where the ELF begins in the containing file.
     let elf_base = f.stream_position()?;
 
@@ -137,5 +137,9 @@ fn load_elf(mut f: File) -> io::Result<()> {
         "Entry point byte: {:#X}",
         space.read_byte(entry_address).map_err(io::Error::other)?
     );
-    Ok(())
+
+    Ok(LoadedExecutable {
+        memory: space,
+        entry_point: entry_address,
+    })
 }
