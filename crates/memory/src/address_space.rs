@@ -26,8 +26,7 @@ impl AddressSpace {
 
         // Check whether base+size overflows
         let size_u64 = u64::try_from(size).map_err(|_| "Region size too large")?;
-        base.checked_add(size_u64)
-            .ok_or("Region address overflow")?;
+        base.checked_add(size_u64).ok_or("Region address overflow")?;
 
         for region in &self.regions {
             // chceck for overlaps
@@ -78,5 +77,38 @@ impl AddressSpace {
         }
 
         Err("Address is not mapped")
+    }
+
+    // Given an address and a byte, it searches through the regions in virtual memory and writes the byte to the address. This function does not check for write permissions.
+    // Its only for the first time, when we read the bytes from the elf, and we want to put it in memory. After that we need permissions to r/w/e
+    pub fn load_byte(
+        &mut self,
+        address: u64,
+        value: u8,
+    ) -> Result<(), &'static str> {
+        for region in &mut self.regions {
+            if region.contains(address) {
+                if region.write_byte(address, value).is_some() {
+                    return Ok(());
+                } else {
+                    return Err("Failed to write byte to address");
+                }
+            }
+        }
+        Err("Address is not mapped")
+    }
+
+    pub fn load_bytes(
+        &mut self,
+        address: u64,
+        data: &[u8],
+    ) -> Result<(), &'static str> {
+        for (index, byte) in data.iter().enumerate() {
+            let index = u64::try_from(index).map_err(|_| "Index too large")?;
+            let next_address = address.checked_add(index).ok_or("Address overflow")?;
+            self.load_byte(next_address, *byte)?;
+        }
+
+        Ok(())
     }
 }
