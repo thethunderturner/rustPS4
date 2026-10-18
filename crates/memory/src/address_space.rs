@@ -42,14 +42,19 @@ impl AddressSpace {
     }
 
     // Given an address, search through the regions in virtual memory and return the byte that matches the address
-    pub fn read_byte(&self, address: u64) -> Option<u8> {
+    pub fn read_byte(&self, address: u64) -> Result<u8, &'static str> {
         for region in &self.regions {
-            if let Some(byte) = region.read_byte(address) {
-                return Some(byte);
+            if region.contains(address) {
+                if !region.permissions.can_read() {
+                    return Err("Tried to read in region without read permission");
+                };
+                if let Some(byte) = region.read_byte(address) {
+                    return Ok(byte);
+                }
             }
         }
 
-        None
+        Err("Address is not mapped")
     }
 
     // Given an address and a byte, it searches through the regions in virtual memory and writes the byte to the address
