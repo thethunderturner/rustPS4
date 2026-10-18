@@ -39,19 +39,6 @@ fn main() -> io::Result<()> {
 
             println!("{:#?}", segments);
             println!("{:#?}", headers);
-
-            let mut space = AddressSpace::new();
-
-            space.map(0x1000, 0x1000).unwrap();
-            space.map(0x5000, 0x1000).unwrap();
-
-            space.write_byte(0x5003, 0xAB).unwrap();
-            space.write_byte(0x1002, 0xCD).unwrap();
-
-            assert_eq!(space.read_byte(0x5003), Some(0xAB));
-            assert_eq!(space.read_byte(0x1002), Some(0xCD));
-
-            assert_eq!(space.read_byte(0x3000), None);
         }
 
         [0x7F, 0x45, 0x4C, 0x46] => {
@@ -63,17 +50,17 @@ fn main() -> io::Result<()> {
             }
             // println!("{:#?}", headers);
 
-            let code = Permissions::new(5);
+            let mut space = AddressSpace::new();
 
-            assert!(code.can_read());
-            assert!(!code.can_write());
-            assert!(code.can_execute());
+            space.map(0x1000, 0x1000, Permissions::new(5)).unwrap();
+            space.map(0x5000, 0x1000, Permissions::new(6)).unwrap();
 
-            let data = Permissions::new(6);
-
-            assert!(data.can_read());
-            assert!(data.can_write());
-            assert!(!data.can_execute());
+            assert!(space.write_byte(0x1100, 0xAB).is_err());
+            assert_eq!(space.read_byte(0x1100), Some(0));
+            assert_eq!(space.write_byte(0x5100, 0xCD), Ok(()));
+            assert_eq!(space.read_byte(0x5100), Some(0xCD));
+            assert_eq!(space.write_byte(0x9000, 0xAB), Err("Address is not mapped"));
+            println!("{space:?}");
         }
 
         _ => {

@@ -1,4 +1,5 @@
 use crate::guest::{GuestMemory, overlaps};
+use crate::permissions::Permissions;
 
 #[derive(Debug)]
 pub struct AddressSpace {
@@ -12,7 +13,7 @@ impl AddressSpace {
         }
     }
 
-    pub fn map(&mut self, base: u64, size: usize) -> Result<(), &'static str> {
+    pub fn map(&mut self, base: u64, size: usize, permissions: Permissions,) -> Result<(), &'static str> {
         // Reject regions size 0
         if size == 0 {
             return Err("Region size cannot be 0");
@@ -20,8 +21,6 @@ impl AddressSpace {
 
         // Check whether base+size overflows
         let size_u64 = u64::try_from(size).map_err(|_| "Region size too large")?;
-
-        // Check whether base + size overflows.
         base.checked_add(size_u64)
             .ok_or("Region address overflow")?;
 
@@ -37,7 +36,7 @@ impl AddressSpace {
             }
         }
 
-        self.regions.push(GuestMemory::new(base, size));
+        self.regions.push(GuestMemory::new(base, size, permissions));
 
         Ok(())
     }
@@ -54,13 +53,20 @@ impl AddressSpace {
     }
 
     // Given an address and a byte, it searches through the regions in virtual memory and writes the byte to the address
-    pub fn write_byte(&mut self, address: u64, value: u8) -> Option<()> {
+    pub fn write_byte(&mut self, address: u64, value: u8) -> Result<(), &'static str> {
         for region in &mut self.regions {
-            if region.write_byte(address, value).is_some() {
-                return Some(());
+            if region.contains(address) {
+                if !region.permissions.can_write() {
+                    return Err("Tried to write in region without write permission");
+                };
+                if region.write_byte(address, value).is_some() {
+                    return Ok(());
+                } else {
+                    return Err("Failed to write byte to address");
+                }
             }
         }
 
-        None
+        Err("Address is not mapped")
     }
 }

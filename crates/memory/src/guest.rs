@@ -1,15 +1,19 @@
+use crate::permissions::Permissions;
+
 #[derive(Debug)]
 pub struct GuestMemory {
     pub base: u64,
     pub bytes: Vec<u8>,
+    pub permissions: Permissions,
 }
 
 impl GuestMemory {
     // This represents guest memory from X to Y (exclusive)
-    pub fn new(base: u64, size: usize) -> Self {
+    pub fn new(base: u64, size: usize, permissions: Permissions) -> Self {
         Self {
             base,
             bytes: vec![0; size],
+            permissions,
         }
     }
 
@@ -28,6 +32,18 @@ impl GuestMemory {
         *byte = value;
 
         Some(())
+    }
+
+    pub fn contains(&self, address: u64) -> bool {
+        let offset = address.checked_sub(self.base);
+
+        if let Some(offset) = offset {
+            if let Ok(index) = usize::try_from(offset) {
+                return index < self.bytes.len();
+            }
+        }
+
+        false
     }
 }
 
